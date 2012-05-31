@@ -1,0 +1,4 @@
+cscodegen
+=========
+
+CoffeeScript code generator
