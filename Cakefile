@@ -6,16 +6,14 @@ CoffeeScript = require 'coffee-script'
 
 inspect = (o) -> util.inspect o, no, 2, yes
 
-execCallback = (err, stdout, stderr) ->
-  if err? then console.error "exec error: #{err}"
-  if stdout.toString() then console.log stdout
-  if stderr.toString() then console.error stderr
+task 'build', (options, cb) ->
+  filename = path.join 'src', 'cscodegen.coffee'
+  fs.readFile filename, (err, source) ->
+    throw err if err
+    js = CoffeeScript.compile source.toString(), {filename, header: yes}
+    fs.writeFile (path.join 'lib', 'cscodegen.js'), js, cb
 
-task 'build', ->
-  exec 'coffee -sc < src/cscodegen.coffee > lib/cscodegen.js', execCallback
-  0
-
-task 'test', ->
+task 'test', (options, cb) ->
 
   global[name] = func for name, func of require 'assert'
   {generate: global.generate} = require './lib/cscodegen'
@@ -39,9 +37,9 @@ task 'test', ->
   global.arrayEq = (a, b, msg) -> ok arrayEgal(a,b), msg ? "#{inspect a} === #{inspect b}"
 
   # Run every test in the `test` folder, recording failures.
-  files = fs.readdirSync 'test'
-  for file in files when file.match /\.coffee$/i
-    code = fs.readFileSync filename = path.join 'test', file
-    CoffeeScript.run code.toString(), {filename}
-
-  0
+  fs.readdir 'test', (err, files) ->
+    throw err if err
+    for file in files when file.match /\.coffee$/i
+      code = fs.readFileSync filename = path.join 'test', file
+      CoffeeScript.run code.toString(), {filename}
+    cb?()
