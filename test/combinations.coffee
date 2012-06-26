@@ -1,5 +1,3 @@
-{Program, Block, AssignOp, Identifier, Function: CSFunction, FunctionApplication, MultiplyOp, AddOp} = require 'CoffeeScriptRedux/lib/coffee-script/nodes'
-
 # program . assignment . application . function . maths . maths
 eq 'a = ((x, y) -> x * (y + z)) b'
 , generate new Program new Block [

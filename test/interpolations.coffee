@@ -1,5 +1,3 @@
-{ConcatOp, String: CSString, Identifier} = require 'CoffeeScriptRedux/lib/coffee-script/nodes'
-
 eq '"ab"'          , generate new ConcatOp (new CSString 'a'), new CSString 'b'
 eq '"a#{b}"'       , generate new ConcatOp (new CSString 'a'), new Identifier 'b'
 eq '"#{a}b"'       , generate new ConcatOp (new Identifier 'a'), new CSString 'b'

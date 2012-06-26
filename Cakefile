@@ -17,6 +17,8 @@ task 'test', (options, cb) ->
 
   global[name] = func for name, func of require 'assert'
   {generate: global.generate} = require './lib/cscodegen'
+  for name, node of require 'CoffeeScriptRedux/lib/coffee-script/nodes'
+    global[if name of global then "CS#{name}" else name] = node
 
   # See http://wiki.ecmascript.org/doku.php?id=harmony:egal
   egal = (a, b) ->

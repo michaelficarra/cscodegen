@@ -1,5 +1,3 @@
-{String: CSString} = require 'CoffeeScriptRedux/lib/coffee-script/nodes'
-
 eq "'abc'", generate new CSString 'abc'
 eq "'\\b'", generate new CSString '\b'
 eq "'\\u0001'", generate new CSString '\u0001'
