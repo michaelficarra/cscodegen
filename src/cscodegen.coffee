@@ -32,24 +32,23 @@ do (exports = exports ? this.cscodegen = {}) ->
         "\#{#{generate ast, options}}"
 
   levels = [
-    ['Function', 'BoundFunction'] # Arrow
     ['SeqOp'] # Sequence
-    ['Conditional', 'ForIn', 'ForOf', 'While'] # ControlFlow
+    ['Conditional', 'ForIn', 'ForOf', 'While'] # Control Flow
     ['AssignOp', 'CompoundAssignOp', 'ExistsAssignOp'] # Assignment
-    ['LogicalOrOp'] # LogicalOR
-    ['LogicalAndOp'] # LogicalAND
-    ['BitOrOp'] # BitwiseOR
-    ['BitXorOp'] # BitwiseXOR
-    ['BitAndOp'] # BitwiseAND
+    ['LogicalOrOp'] # Logical OR
+    ['LogicalAndOp'] # Logical AND
+    ['BitOrOp'] # Bitwise OR
+    ['BitXorOp'] # Bitwise XOR
+    ['BitAndOp'] # Bitwise AND
+    ['ExistsOp'] # Existential
     ['EQOp', 'NEQOp'] # Equality
     ['LTOp', 'LTEOp', 'GTOp', 'GTEOp', 'InOp', 'OfOp', 'InstanceofOp'] # Relational
-    ['LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp'] # BitwiseSHIFT
+    ['LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp'] # Bitwise Shift
     ['AddOp', 'SubtractOp'] # Additive
     ['MultiplyOp', 'DivideOp', 'RemOp'] # Multiplicative
-    ['Spread'] # Spread
-    ['UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp'] # Unary
-    ['UnaryExistsOp', 'ShallowCopyArray', 'PostIncrementOp', 'PostDecrementOp'] # Postfix
     ['FunctionApplication', 'SoakedFunctionApplication'] # Application
+    ['UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp', 'DeleteOp'] # Unary
+    ['UnaryExistsOp', 'ShallowCopyArray', 'PostIncrementOp', 'PostDecrementOp', 'Spread'] # Postfix
     ['NewOp'] # New
     ['MemberAccessOp', 'SoakedMemberAccessOp', 'DynamicMemberAccessOp', 'SoakedDynamicMemberAccessOp', 'ProtoMemberAccessOp', 'DynamicProtoMemberAccessOp', 'SoakedProtoMemberAccessOp', 'SoakedDynamicProtoMemberAccessOp'] # Member
   ]
@@ -102,6 +101,8 @@ do (exports = exports ? this.cscodegen = {}) ->
         (generate s, options for s in ast.statements).join '\n\n'
       when 'Identifier'
         ast.data
+      when 'Int'
+        ast.data
       when 'String'
         "'#{formatStringData ast.data}'"
       when 'Function', 'BoundFunction'
@@ -111,7 +112,10 @@ do (exports = exports ? this.cscodegen = {}) ->
         parameters = (generate p, options for p in ast.parameters)
         block = generate ast.block, options
         paramList = if ast.parameters.length > 0 then "(#{parameters.join ', '}) " else ''
-        body = if ast.block.length > 0 then "\n#{indent block}" else " #{block}"
+        body = switch ast.block.statements.length
+          when 0 then ""
+          when 1 then " #{block}"
+          else "\n#{indent block}"
         switch ast.className
           when 'Function' then "#{paramList}->#{body}"
           when 'BoundFunction' then "#{paramList}=>#{body}"
@@ -129,12 +133,13 @@ do (exports = exports ? this.cscodegen = {}) ->
         left = generate ast.left, options
         right = generate ast.right, options
         "#{left}; #{right}"
-      when 'LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp', 'AddOp', 'SubtractOp', 'MultiplyOp', 'DivideOp', 'RemOp'
+      when 'LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp', 'AddOp', 'SubtractOp', 'MultiplyOp', 'DivideOp', 'RemOp', 'ExistsOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         left = generate ast.left, options
+        left = "(#{left})" if ast.left.className in ['Function', 'BoundFunction']
         right = generate ast.right, options
         "#{left} #{op} #{right}"
       when 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp'
@@ -143,17 +148,40 @@ do (exports = exports ? this.cscodegen = {}) ->
         needsParens = prec < options.precedence
         options.precedence = prec
         "#{op}#{generate ast.expr, options}"
-      when 'UnaryExistsOp', 'ShallowCopyArray', 'PostIncrementOp', 'PostDecrementOp', 'Spread'
+      when 'UnaryExistsOp', 'PostIncrementOp', 'PostDecrementOp', 'Spread'
         op = operators[ast.className]
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
-        "#{generate ast.expr, options}#{op}"
+        expr = generate ast.expr, options
+        expr = "(#{expr})" if ast.expr.className in ['Function', 'BoundFunction']
+        "#{expr}#{op}"
+      when 'PreIncrementOp', 'PreDecrementOp', 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'DeleteOp'
+        op = operators[ast.className]
+        prec = precedence[ast.className]
+        needsParens = prec < options.precedence
+        options.precedence = prec
+        "#{op}#{generate ast.expr, options}"
+      when 'NewOp'
+        op = operators[ast.className]
+        prec = precedence[ast.className]
+        needsParens = prec < options.precedence
+        options.precedence = prec
+        ctor = generate ast.ctor, options
+        ctor = "(#{ctor})" if ast.arguments.length > 0 and ast.ctor.className in ['Function', 'BoundFunction']
+        options.precedence = precedence['AssignOp']
+        args = for a in ast.arguments
+          generate a, options
+        args = args.join ', '
+        args = " #{args}" if ast.arguments.length > 0
+        "#{op}#{ctor}#{args}"
       when 'FunctionApplication', 'SoakedFunctionApplication'
         op = operators[ast.className]
-        options.precedence = precedence[ast.className]
+        prec = precedence[ast.className]
         needsParens = prec < options.precedence
+        options.precedence = prec
         fn = generate ast.function, options
+        fn = "(#{fn})" if ast.function.className in ['Function', 'BoundFunction']
         args = (generate a, options for a in ast.arguments)
         argList = if ast.arguments.length is 0 then '()' else " #{args.join ', '}"
         "#{fn}#{op}#{argList}"
@@ -179,5 +207,5 @@ do (exports = exports ? this.cscodegen = {}) ->
         right = formatInterpolation ast.right, options
         "\"#{left}#{right}\""
       else
-        throw new Error 'Non-exhaustive patterns in case: #{ast.className}'
+        throw new Error "Non-exhaustive patterns in case: #{ast.className}"
     if needsParens then (parens src) else src
