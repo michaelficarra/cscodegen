@@ -31,9 +31,18 @@ do (exports = exports ? this.cscodegen = {}) ->
       else
         "\#{#{generate ast, options}}"
 
+  needsParensWhenOnLeft = (ast) ->
+    switch ast.className
+      when 'Function', 'BoundFunction', 'FunctionApplication' then yes
+      when 'PreIncrementOp', 'PreDecrementOp', 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'DeleteOp'
+        needsParensWhenOnLeft ast.expr
+      when 'NewOp' then ast.arguments.length > 0
+      else no
+
   levels = [
     ['SeqOp'] # Sequence
     ['Conditional', 'ForIn', 'ForOf', 'While'] # Control Flow
+    ['FunctionApplication', 'SoakedFunctionApplication'] # Application
     ['AssignOp', 'CompoundAssignOp', 'ExistsAssignOp'] # Assignment
     ['LogicalOrOp'] # Logical OR
     ['LogicalAndOp'] # Logical AND
@@ -46,7 +55,6 @@ do (exports = exports ? this.cscodegen = {}) ->
     ['LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp'] # Bitwise Shift
     ['AddOp', 'SubtractOp'] # Additive
     ['MultiplyOp', 'DivideOp', 'RemOp'] # Multiplicative
-    ['FunctionApplication', 'SoakedFunctionApplication'] # Application
     ['UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp', 'DeleteOp'] # Unary
     ['UnaryExistsOp', 'ShallowCopyArray', 'PostIncrementOp', 'PostDecrementOp', 'Spread'] # Postfix
     ['NewOp'] # New
@@ -106,10 +114,9 @@ do (exports = exports ? this.cscodegen = {}) ->
       when 'String'
         "'#{formatStringData ast.data}'"
       when 'Function', 'BoundFunction'
-        prec = precedence[ast.className]
-        needsParens = prec < options.precedence
-        options.precedence = prec
+        options.precedence = precedence['AssignmentExpression']
         parameters = (generate p, options for p in ast.parameters)
+        options.precedence = 0
         block = generate ast.block, options
         paramList = if ast.parameters.length > 0 then "(#{parameters.join ', '}) " else ''
         body = switch ast.block.statements.length
@@ -139,7 +146,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         needsParens = prec < options.precedence
         options.precedence = prec
         left = generate ast.left, options
-        left = "(#{left})" if ast.left.className in ['Function', 'BoundFunction']
+        left = "(#{left})" if needsParensWhenOnLeft ast.left
         right = generate ast.right, options
         "#{left} #{op} #{right}"
       when 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp'
@@ -154,7 +161,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         needsParens = prec < options.precedence
         options.precedence = prec
         expr = generate ast.expr, options
-        expr = "(#{expr})" if ast.expr.className in ['Function', 'BoundFunction']
+        expr = "(#{expr})" if needsParensWhenOnLeft ast.expr
         "#{expr}#{op}"
       when 'PreIncrementOp', 'PreDecrementOp', 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'DeleteOp'
         op = operators[ast.className]
@@ -168,21 +175,24 @@ do (exports = exports ? this.cscodegen = {}) ->
         needsParens = prec < options.precedence
         options.precedence = prec
         ctor = generate ast.ctor, options
-        ctor = "(#{ctor})" if ast.arguments.length > 0 and ast.ctor.className in ['Function', 'BoundFunction']
+        ctor = "(#{ctor})" if ast.arguments.length > 0 and needsParensWhenOnLeft ast.ctor
         options.precedence = precedence['AssignOp']
-        args = for a in ast.arguments
-          generate a, options
+        args = for a, i in ast.arguments
+          arg = generate a, options
+          arg = "(#{arg})" if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
+          arg
         args = args.join ', '
         args = " #{args}" if ast.arguments.length > 0
         "#{op}#{ctor}#{args}"
       when 'FunctionApplication', 'SoakedFunctionApplication'
         op = operators[ast.className]
-        prec = precedence[ast.className]
-        needsParens = prec < options.precedence
-        options.precedence = prec
+        options.precedence = precedence[ast.className]
         fn = generate ast.function, options
-        fn = "(#{fn})" if ast.function.className in ['Function', 'BoundFunction']
-        args = (generate a, options for a in ast.arguments)
+        fn = "(#{fn})" if needsParensWhenOnLeft ast.function
+        args = for a, i in ast.arguments
+          arg = generate a, options
+          arg = "(#{arg})" if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
+          arg
         argList = if ast.arguments.length is 0 then '()' else " #{args.join ', '}"
         "#{fn}#{op}#{argList}"
       when 'MemberAccessOp', 'SoakedMemberAccessOp', 'ProtoMemberAccessOp', 'SoakedProtoMemberAccessOp'
