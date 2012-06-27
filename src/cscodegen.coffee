@@ -33,10 +33,10 @@ do (exports = exports ? this.cscodegen = {}) ->
 
   needsParensWhenOnLeft = (ast) ->
     switch ast.className
-      when 'Function', 'BoundFunction', 'FunctionApplication' then yes
+      when 'Function', 'BoundFunction' then yes
       when 'PreIncrementOp', 'PreDecrementOp', 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'DeleteOp'
         needsParensWhenOnLeft ast.expr
-      when 'NewOp' then ast.arguments.length > 0
+      when 'NewOp', 'FunctionApplication' then ast.arguments.length > 0
       else no
 
   levels = [
@@ -70,14 +70,14 @@ do (exports = exports ? this.cscodegen = {}) ->
   operators =
     # Binary
     SeqOp: ';'
-    LogicalOrOp: '||', LogicalAndOp: '&&'
+    LogicalOrOp: 'or', LogicalAndOp: 'and'
     BitOrOp: '|', BitXorOp: '^', BitAndOp: '&'
     EQOp: 'is', NEQOp: 'isnt', LTOp: '<', LTEOp: '<=', GTOp: '>', GTEOp: '>='
     InOp: 'in', OfOp: 'of', InstanceofOp: 'instanceof'
     LeftShiftOp: '<<', SignedRightShiftOp: '>>', UnsignedRightShiftOp: '>>>'
     AddOp: '+', SubtractOp: '-', MultiplyOp: '*', DivideOp: '/', RemOp: '%'
     # Prefix
-    UnaryPlusOp: '+', UnaryNegateOp: '-', LogicalNotOp: '!', BitNotOp: '~'
+    UnaryPlusOp: '+', UnaryNegateOp: '-', LogicalNotOp: 'not ', BitNotOp: '~'
     DoOp: 'do ', NewOp: 'new ', TypeofOp: 'typeof '
     PreIncrementOp: '++', PreDecrementOp: '--'
     # Postfix
@@ -140,7 +140,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         left = generate ast.left, options
         right = generate ast.right, options
         "#{left}; #{right}"
-      when 'LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp', 'AddOp', 'SubtractOp', 'MultiplyOp', 'DivideOp', 'RemOp', 'ExistsOp'
+      when 'LogicalOrOp', 'LogicalAndOp', 'BitOrOp', 'BitXorOp', 'BitAndOp', 'LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp', 'EQOp', 'NEQOp', 'LTOp', 'LTEOp', 'GTOp', 'GTEOp', 'InOp', 'OfOp', 'InstanceofOp', 'AddOp', 'SubtractOp', 'MultiplyOp', 'DivideOp', 'RemOp', 'ExistsOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
@@ -151,10 +151,20 @@ do (exports = exports ? this.cscodegen = {}) ->
         "#{left} #{op} #{right}"
       when 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp'
         op = operators[ast.className]
+        if ast.className is 'LogicalNotOp'
+          switch ast.expr.className
+            # TODO: negated binary operators
+            when 'LogicalNotOp'
+              op = '!'
+              while ast.expr.className is 'LogicalNotOp'
+                op += '!'
+                ast.expr = ast.expr.expr
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
-        "#{op}#{generate ast.expr, options}"
+        expr = generate ast.expr, options
+        expr = "(#{expr})" if ast.expr.className is ast.className and ast.className in ['UnaryPlusOp', 'UnaryNegateOp']
+        "#{op}#{expr}"
       when 'UnaryExistsOp', 'PostIncrementOp', 'PostDecrementOp', 'Spread'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -163,12 +173,6 @@ do (exports = exports ? this.cscodegen = {}) ->
         expr = generate ast.expr, options
         expr = "(#{expr})" if needsParensWhenOnLeft ast.expr
         "#{expr}#{op}"
-      when 'PreIncrementOp', 'PreDecrementOp', 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'DeleteOp'
-        op = operators[ast.className]
-        prec = precedence[ast.className]
-        needsParens = prec < options.precedence
-        options.precedence = prec
-        "#{op}#{generate ast.expr, options}"
       when 'NewOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
