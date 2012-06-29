@@ -79,7 +79,7 @@ eq '0 instanceof 1', generate new InstanceofOp (new Int 0), new Int 1
 eq '0 << 1', generate new LeftShiftOp (new Int 0), new Int 1
 eq '0 >> 1', generate new SignedRightShiftOp (new Int 0), new Int 1
 eq '0 >>> 1', generate new UnsignedRightShiftOp (new Int 0), new Int 1
-eq '0 + 1', generate new AddOp (new Int 0), new Int 1
+eq '0 + 1', generate new PlusOp (new Int 0), new Int 1
 eq '0 - 1', generate new SubtractOp (new Int 0), new Int 1
 eq '0 * 1', generate new MultiplyOp (new Int 0), new Int 1
 eq '0 / 1', generate new DivideOp (new Int 0), new Int 1
