@@ -86,7 +86,7 @@ eq '0 / 1', generate new DivideOp (new Int 0), new Int 1
 eq '0 % 1', generate new RemOp (new Int 0), new Int 1
 
 # negated binary operators
-# TODO
+eq '0 not in 1', generate new LogicalNotOp new InOp (new Int 0), new Int 1
 
 # binary operators and function literals
 eq '(->) % 0', generate new RemOp (new CSFunction [], new Block []), new Int 0
