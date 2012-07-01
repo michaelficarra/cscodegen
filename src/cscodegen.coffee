@@ -33,10 +33,10 @@ do (exports = exports ? this.cscodegen = {}) ->
 
   needsParensWhenOnLeft = (ast) ->
     switch ast.className
-      when 'Function', 'BoundFunction' then yes
+      when 'Function', 'BoundFunction', 'NewOp' then yes
       when 'PreIncrementOp', 'PreDecrementOp', 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'DeleteOp'
         needsParensWhenOnLeft ast.expr
-      when 'NewOp', 'FunctionApplication' then ast.arguments.length > 0
+      when 'FunctionApplication' then ast.arguments.length > 0
       else no
 
   levels = [
@@ -106,6 +106,7 @@ do (exports = exports ? this.cscodegen = {}) ->
     options.ancestors ?= []
     parent = options.ancestors[0]
     parentClassName = parent?.className
+    usedAsExpression = parent? and parentClassName isnt 'Block'
     src = switch ast.className
       when 'Program'
         options.ancestors.unshift ast
@@ -187,7 +188,7 @@ do (exports = exports ? this.cscodegen = {}) ->
       when 'NewOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
-        needsParens = prec < options.precedence
+        #needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
         ctor = generate ast.ctor, options
@@ -195,23 +196,26 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = precedence['AssignOp']
         args = for a, i in ast.arguments
           arg = generate a, options
-          arg = "(#{arg})" if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
+          arg = parens arg if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
           arg
         args = args.join ', '
         args = " #{args}" if ast.arguments.length > 0
         "#{op}#{ctor}#{args}"
       when 'FunctionApplication', 'SoakedFunctionApplication'
-        op = operators[ast.className]
-        options.precedence = precedence[ast.className]
-        options.ancestors.unshift ast
-        fn = generate ast.function, options
-        fn = "(#{fn})" if needsParensWhenOnLeft ast.function
-        args = for a, i in ast.arguments
-          arg = generate a, options
-          arg = "(#{arg})" if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
-          arg
-        argList = if ast.arguments.length is 0 then '()' else " #{args.join ', '}"
-        "#{fn}#{op}#{argList}"
+        if ast.className is 'FunctionApplication' and ast.arguments.length is 0 and not usedAsExpression
+          generate (new DoOp ast.function), options
+        else
+          op = operators[ast.className]
+          options.precedence = precedence[ast.className]
+          options.ancestors.unshift ast
+          fn = generate ast.function, options
+          fn = "(#{fn})" if needsParensWhenOnLeft ast.function
+          args = for a, i in ast.arguments
+            arg = generate a, options
+            arg = parens arg if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
+            arg
+          argList = if ast.arguments.length is 0 then '()' else " #{args.join ', '}"
+          "#{fn}#{op}#{argList}"
       when 'MemberAccessOp', 'SoakedMemberAccessOp', 'ProtoMemberAccessOp', 'SoakedProtoMemberAccessOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -219,8 +223,8 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = prec
         options.ancestors.unshift ast
         expr = generate ast.expr, options
-        memberName = generate ast.memberName, options
-        "#{expr}#{op}#{memberName}"
+        expr = parens expr if needsParensWhenOnLeft ast.expr
+        "#{expr}#{op}#{ast.memberName}"
       when 'DynamicMemberAccessOp', 'SoakedDynamicMemberAccessOp', 'DynamicProtoMemberAccessOp', 'SoakedDynamicProtoMemberAccessOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -228,6 +232,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = prec
         options.ancestors.unshift ast
         expr = generate ast.expr, options
+        expr = parens expr if needsParensWhenOnLeft ast.expr
         options.precedence = 0
         indexingExpr = generate ast.indexingExpr, options
         "#{expr}#{op}[#{indexingExpr}]"
