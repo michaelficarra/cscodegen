@@ -159,7 +159,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = prec
         options.ancestors.unshift ast
         left = generate ast.left, options
-        left = "(#{left})" if needsParensWhenOnLeft ast.left
+        left = parens left if needsParensWhenOnLeft ast.left
         right = generate ast.right, options
         "#{left} #{op} #{right}"
       when 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp'
@@ -183,7 +183,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = prec
         options.ancestors.unshift ast
         expr = generate ast.expr, options
-        expr = "(#{expr})" if needsParensWhenOnLeft ast.expr
+        expr = parens expr if needsParensWhenOnLeft ast.expr
         "#{expr}#{op}"
       when 'NewOp'
         op = operators[ast.className]
@@ -192,7 +192,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = prec
         options.ancestors.unshift ast
         ctor = generate ast.ctor, options
-        ctor = "(#{ctor})" if ast.arguments.length > 0 and needsParensWhenOnLeft ast.ctor
+        ctor = parens ctor if ast.arguments.length > 0 and needsParensWhenOnLeft ast.ctor
         options.precedence = precedence['AssignOp']
         args = for a, i in ast.arguments
           arg = generate a, options
@@ -209,7 +209,7 @@ do (exports = exports ? this.cscodegen = {}) ->
           options.precedence = precedence[ast.className]
           options.ancestors.unshift ast
           fn = generate ast.function, options
-          fn = "(#{fn})" if needsParensWhenOnLeft ast.function
+          fn = parens fn if needsParensWhenOnLeft ast.function
           args = for a, i in ast.arguments
             arg = generate a, options
             arg = parens arg if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
