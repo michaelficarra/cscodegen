@@ -117,7 +117,13 @@ do (exports = exports ? this.cscodegen = {}) ->
       when 'Identifier'
         ast.data
       when 'Int'
-        ast.data
+        absNum = if ast.data < 0 then -ast.data else ast.data
+        hex = ast.data.toString 16
+        # if it's a power of two (at least 2^4), represent it as hex
+        return hex if absNum >= 0x10 and 0 is absNum & (absNum - 1)
+        # if hex is a shorter representation, use hex
+        return hex if absNum >= 1e12
+        ast.data.toString 10
       when 'String'
         "'#{formatStringData ast.data}'"
       when 'Function', 'BoundFunction'
