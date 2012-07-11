@@ -5,6 +5,7 @@ suite 'Function Literals', ->
     @x = new Identifier 'x'
     @y = new Identifier 'y'
 
+
   test 'basic function literals', ->
     eq '->', generate new CSFunction [], @emptyBlock
     eq '=>', generate new BoundFunction [], @emptyBlock

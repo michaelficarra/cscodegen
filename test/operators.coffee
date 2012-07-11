@@ -7,6 +7,7 @@ suite 'Operators', ->
     @one = new Int 1
     @[letter] = new Identifier letter for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'F']
 
+
   test 'unary prefix operators', ->
     eq '++0', generate new PreIncrementOp @zero
     eq '--0', generate new PreDecrementOp @zero

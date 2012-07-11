@@ -5,6 +5,7 @@ suite 'Interpolations', ->
       @["str#{letter.toUpperCase()}"] = new CSString letter
       @["var#{letter.toUpperCase()}"] = new Identifier letter
 
+
   test 'simple interpolations', ->
     eq '"ab"'          , generate new ConcatOp @strA, @strB
     eq '"a#{b}"'       , generate new ConcatOp @strA, @varB
