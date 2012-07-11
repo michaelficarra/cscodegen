@@ -2,7 +2,8 @@ util = require 'util'
 inspect = (o) -> util.inspect o, no, 2, yes
 
 global[name] = func for name, func of require 'assert'
-{generate: global.generate} = require '../lib/cscodegen'
+libDir = if typeof _$jscoverage is 'undefined' then 'lib' else 'instrumented'
+{generate: global.generate} = require "../#{libDir}/cscodegen"
 for name, node of require 'CoffeeScriptRedux/lib/coffee-script/nodes'
   global[if name of global then "CS#{name}" else name] = node
 
