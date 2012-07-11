@@ -122,8 +122,8 @@ do (exports = exports ? this.cscodegen = {}) ->
         absNum = if ast.data < 0 then -ast.data else ast.data
         # if number is a power of two (at least 2^4) or hex is a shorter
         # representation, represent it as hex
-        if absNum >= 1e12 or (absNum >= 0x10 and 0 is absNum & (absNum - 1))
-          ast.data.toString 16
+        if absNum >= 1e12 or (absNum >= 0x10 and 0 is (absNum & (absNum - 1)))
+          "0x#{ast.data.toString 16}"
         else
           ast.data.toString 10
       when 'String'
