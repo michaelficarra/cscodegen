@@ -16,10 +16,11 @@ test: $(LIB) $(TEST)
 	$(MOCHA) -R spec
 
 # obviously, this is not ideal
-coverage:
+coverage: build
 	@which jscoverage || (echo "install node-jscoverage"; exit 1)
 	rm -rf instrumented
 	jscoverage -v lib instrumented
+	$(MOCHA) -r instrumented/cscodegen -R dot
 	$(MOCHA) -r instrumented/cscodegen -R html-cov > coverage.html
 	@xdg-open coverage.html &> /dev/null
 

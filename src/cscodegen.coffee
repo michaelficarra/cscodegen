@@ -113,7 +113,9 @@ do (exports = exports ? this.cscodegen = {}) ->
         generate ast.block, options
       when 'Block'
         options.ancestors.unshift ast
-        (generate s, options for s in ast.statements).join '\n\n'
+        sep = '\n'
+        sep = "#{sep}\n" if parentClassName is 'Program'
+        (generate s, options for s in ast.statements).join sep
       when 'Identifier'
         ast.data
       when 'Int'

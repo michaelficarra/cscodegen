@@ -1,119 +1,126 @@
 suite 'Operators', ->
 
+  setup ->
+    @emptyBlock = new Block []
+    @emptyFunction = new CSFunction [], @emptyBlock
+    @zero = new Int 0
+    @one = new Int 1
+    @[letter] = new Identifier letter for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'F']
+
   test 'unary prefix operators', ->
-    eq '++0', generate new PreIncrementOp new Int 0
-    eq '--0', generate new PreDecrementOp new Int 0
-    eq '+0', generate new UnaryPlusOp new Int 0
-    eq '+(+0)', generate new UnaryPlusOp new UnaryPlusOp new Int 0
-    eq '-0', generate new UnaryNegateOp new Int 0
-    eq '-(-0)', generate new UnaryNegateOp new UnaryNegateOp new Int 0
-    eq 'not 0', generate new LogicalNotOp new Int 0
-    eq '!!0', generate new LogicalNotOp new LogicalNotOp new Int 0
-    eq '!!!0', generate new LogicalNotOp new LogicalNotOp new LogicalNotOp new Int 0
-    eq '~0', generate new BitNotOp new Int 0
-    eq 'do 0', generate new DoOp new Int 0
-    eq 'typeof 0', generate new TypeofOp new Int 0
-    eq 'new 0', generate new NewOp (new Int 0), []
+    eq '++0', generate new PreIncrementOp @zero
+    eq '--0', generate new PreDecrementOp @zero
+    eq '+0', generate new UnaryPlusOp @zero
+    eq '+(+0)', generate new UnaryPlusOp new UnaryPlusOp @zero
+    eq '-0', generate new UnaryNegateOp @zero
+    eq '-(-0)', generate new UnaryNegateOp new UnaryNegateOp @zero
+    eq 'not 0', generate new LogicalNotOp @zero
+    eq '!!0', generate new LogicalNotOp new LogicalNotOp @zero
+    eq '!!!0', generate new LogicalNotOp new LogicalNotOp new LogicalNotOp @zero
+    eq '~0', generate new BitNotOp @zero
+    eq 'do 0', generate new DoOp @zero
+    eq 'typeof 0', generate new TypeofOp @zero
+    eq 'new 0', generate new NewOp @zero, []
 
   test 'unary prefix operators and function literals', ->
-    eq '+->', generate new UnaryPlusOp new CSFunction [], new Block []
-    eq 'new ->', generate new NewOp (new CSFunction [], new Block []), []
+    eq '+->', generate new UnaryPlusOp @emptyFunction
+    eq 'new ->', generate new NewOp (@emptyFunction), []
 
   test 'unary prefix operators and function application', ->
-    eq 'not f 0', generate new LogicalNotOp new FunctionApplication (new Identifier 'f'), [new Int 0]
-    eq 'new F 0', generate new NewOp (new Identifier 'F'), [new Int 0]
-    eq 'new (F 0) 1', generate new NewOp (new FunctionApplication (new Identifier 'F'), [new Int 0]), [new Int 1]
+    eq 'not f 0', generate new LogicalNotOp new FunctionApplication @f, [@zero]
+    eq 'new F 0', generate new NewOp @F, [@zero]
+    eq 'new (F 0) 1', generate new NewOp (new FunctionApplication @F, [@zero]), [@one]
 
   test 'unary prefix operators and application of function literals', ->
-    eq 'new (->) 0, 1', generate new NewOp (new CSFunction [], new Block []), [(new Int 0), new Int 1]
+    eq 'new (->) 0, 1', generate new NewOp (@emptyFunction), [@zero, @one]
 
 
   test 'unary postfix operators', ->
-    eq '0?', generate new UnaryExistsOp new Int 0
-    eq '0++', generate new PostIncrementOp new Int 0
-    eq '0--', generate new PostDecrementOp new Int 0
+    eq '0?', generate new UnaryExistsOp @zero
+    eq '0++', generate new PostIncrementOp @zero
+    eq '0--', generate new PostDecrementOp @zero
 
   test 'unary postfix operators and function literals', ->
-    eq '(->)?', generate new UnaryExistsOp new CSFunction [], new Block []
+    eq '(->)?', generate new UnaryExistsOp @emptyFunction
 
   test 'unary postfix operators and function application', ->
-    eq '(f 0)?', generate new UnaryExistsOp new FunctionApplication (new Identifier "f"), [new Int 0]
-    eq 'f()?', generate new UnaryExistsOp new FunctionApplication (new Identifier "f"), []
+    eq '(f 0)?', generate new UnaryExistsOp new FunctionApplication @f, [@zero]
+    eq 'f()?', generate new UnaryExistsOp new FunctionApplication @f, []
 
 
   test 'unary prefix operators and unary postfix operators', ->
-    eq '+0++', generate new UnaryPlusOp new PostIncrementOp new Int 0
-    eq '(+0)++', generate new PostIncrementOp new UnaryPlusOp new Int 0
-    eq 'new (F?)', generate new NewOp (new UnaryExistsOp new Identifier 'F'), []
-    eq '(new F)?', generate new UnaryExistsOp new NewOp (new Identifier 'F'), []
+    eq '+0++', generate new UnaryPlusOp new PostIncrementOp @zero
+    eq '(+0)++', generate new PostIncrementOp new UnaryPlusOp @zero
+    eq 'new (F?)', generate new NewOp (new UnaryExistsOp @F), []
+    eq '(new F)?', generate new UnaryExistsOp new NewOp @F, []
 
 
   test 'binary operators', ->
-    eq '0; 1', generate new SeqOp (new Int 0), new Int 1
-    eq '0 or 1', generate new LogicalOrOp (new Int 0), new Int 1
-    eq '0 and 1', generate new LogicalAndOp (new Int 0), new Int 1
-    eq '0 | 1', generate new BitOrOp (new Int 0), new Int 1
-    eq '0 ^ 1', generate new BitXorOp (new Int 0), new Int 1
-    eq '0 & 1', generate new BitAndOp (new Int 0), new Int 1
-    eq '0 is 1', generate new EQOp (new Int 0), new Int 1
-    eq '0 isnt 1', generate new NEQOp (new Int 0), new Int 1
-    eq '0 < 1', generate new LTOp (new Int 0), new Int 1
-    eq '0 <= 1', generate new LTEOp (new Int 0), new Int 1
-    eq '0 > 1', generate new GTOp (new Int 0), new Int 1
-    eq '0 >= 1', generate new GTEOp (new Int 0), new Int 1
-    eq '0 in 1', generate new InOp (new Int 0), new Int 1
-    eq '0 of 1', generate new OfOp (new Int 0), new Int 1
-    eq '0 instanceof 1', generate new InstanceofOp (new Int 0), new Int 1
-    eq '0 << 1', generate new LeftShiftOp (new Int 0), new Int 1
-    eq '0 >> 1', generate new SignedRightShiftOp (new Int 0), new Int 1
-    eq '0 >>> 1', generate new UnsignedRightShiftOp (new Int 0), new Int 1
-    eq '0 + 1', generate new PlusOp (new Int 0), new Int 1
-    eq '0 - 1', generate new SubtractOp (new Int 0), new Int 1
-    eq '0 * 1', generate new MultiplyOp (new Int 0), new Int 1
-    eq '0 / 1', generate new DivideOp (new Int 0), new Int 1
-    eq '0 % 1', generate new RemOp (new Int 0), new Int 1
+    eq '0; 1', generate new SeqOp @zero, @one
+    eq '0 or 1', generate new LogicalOrOp @zero, @one
+    eq '0 and 1', generate new LogicalAndOp @zero, @one
+    eq '0 | 1', generate new BitOrOp @zero, @one
+    eq '0 ^ 1', generate new BitXorOp @zero, @one
+    eq '0 & 1', generate new BitAndOp @zero, @one
+    eq '0 is 1', generate new EQOp @zero, @one
+    eq '0 isnt 1', generate new NEQOp @zero, @one
+    eq '0 < 1', generate new LTOp @zero, @one
+    eq '0 <= 1', generate new LTEOp @zero, @one
+    eq '0 > 1', generate new GTOp @zero, @one
+    eq '0 >= 1', generate new GTEOp @zero, @one
+    eq '0 in 1', generate new InOp @zero, @one
+    eq '0 of 1', generate new OfOp @zero, @one
+    eq '0 instanceof 1', generate new InstanceofOp @zero, @one
+    eq '0 << 1', generate new LeftShiftOp @zero, @one
+    eq '0 >> 1', generate new SignedRightShiftOp @zero, @one
+    eq '0 >>> 1', generate new UnsignedRightShiftOp @zero, @one
+    eq '0 + 1', generate new PlusOp @zero, @one
+    eq '0 - 1', generate new SubtractOp @zero, @one
+    eq '0 * 1', generate new MultiplyOp @zero, @one
+    eq '0 / 1', generate new DivideOp @zero, @one
+    eq '0 % 1', generate new RemOp @zero, @one
 
   test 'negated binary operators', ->
-    eq '0 not in 1', generate new LogicalNotOp new InOp (new Int 0), new Int 1
+    eq '0 not in 1', generate new LogicalNotOp new InOp @zero, @one
 
   test 'binary operators and function literals', ->
-    eq '(->) % 0', generate new RemOp (new CSFunction [], new Block []), new Int 0
-    eq '0 % ->', generate new RemOp (new Int 0), new CSFunction [], new Block []
-    eq '->; 0', generate new SeqOp (new CSFunction [], new Block []), new Int 0
-    eq '0; ->', generate new SeqOp (new Int 0), new CSFunction [], new Block []
+    eq '(->) % 0', generate new RemOp (@emptyFunction), @zero
+    eq '0 % ->', generate new RemOp @zero, @emptyFunction
+    eq '->; 0', generate new SeqOp (@emptyFunction), @zero
+    eq '0; ->', generate new SeqOp @zero, @emptyFunction
 
   test 'binary operators and function application', ->
-    eq 'f() % 0', generate new RemOp (new FunctionApplication (new Identifier "f"), []), new Int 0
-    eq '(f 0) % 1', generate new RemOp (new FunctionApplication (new Identifier 'f'), [new Int 0]), new Int 1
-    eq '0 % f 1', generate new RemOp (new Int 0), new FunctionApplication (new Identifier 'f'), [new Int 1]
-    eq 'f 0 % 1', generate new FunctionApplication (new Identifier 'f'), [new RemOp (new Int 0), new Int 1]
+    eq 'f() % 0', generate new RemOp (new FunctionApplication @f, []), @zero
+    eq '(f 0) % 1', generate new RemOp (new FunctionApplication @f, [@zero]), @one
+    eq '0 % f 1', generate new RemOp @zero, new FunctionApplication @f, [@one]
+    eq 'f 0 % 1', generate new FunctionApplication @f, [new RemOp @zero, @one]
 
   test 'binary operators and unary operators on functions', ->
-    eq '(do ->) % 0', generate new RemOp (new DoOp new CSFunction [], new Block []), new Int 0
+    eq '(do ->) % 0', generate new RemOp (new DoOp @emptyFunction), @zero
 
 
   test 'static member access operators', ->
-    eq 'a.b', generate new MemberAccessOp (new Identifier 'a'), 'b'
-    eq 'a.b.c', generate new MemberAccessOp (new MemberAccessOp (new Identifier 'a'), 'b'), 'c'
-    eq 'fn()?.a', generate new SoakedMemberAccessOp (new FunctionApplication (new Identifier 'fn'), []), 'a'
-    eq '(fn 0)::a', generate new ProtoMemberAccessOp (new FunctionApplication (new Identifier 'fn'), [new Int 0]), 'a'
-    eq '(->)?::a', generate new SoakedProtoMemberAccessOp (new CSFunction [], new Block []), 'a'
-    eq '(-> 0).a', generate new MemberAccessOp (new CSFunction [], new Block [new Int 0]), 'a'
-    eq '(new A).b', generate new MemberAccessOp (new NewOp (new Identifier 'A'), []), 'b'
-    eq '(new A 0).b', generate new MemberAccessOp (new NewOp (new Identifier 'A'), [new Int 0]), 'b'
+    eq 'a.b', generate new MemberAccessOp @a, 'b'
+    eq 'a.b.c', generate new MemberAccessOp (new MemberAccessOp @a, 'b'), 'c'
+    eq 'f()?.a', generate new SoakedMemberAccessOp (new FunctionApplication @f, []), 'a'
+    eq '(f 0)::a', generate new ProtoMemberAccessOp (new FunctionApplication @f, [@zero]), 'a'
+    eq '(->)?::a', generate new SoakedProtoMemberAccessOp (@emptyFunction), 'a'
+    eq '(-> 0).a', generate new MemberAccessOp (new CSFunction [], new Block [@zero]), 'a'
+    eq '(new F).b', generate new MemberAccessOp (new NewOp @F, []), 'b'
+    eq '(new F 0).b', generate new MemberAccessOp (new NewOp @F, [@zero]), 'b'
 
   test 'dynamic member access operators', ->
-    eq 'a[0]', generate new DynamicMemberAccessOp (new Identifier 'a'), new Int 0
-    eq 'a[0][1]', generate new DynamicMemberAccessOp (new DynamicMemberAccessOp (new Identifier 'a'), new Int 0), new Int 1
-    eq 'a?[\'b\']', generate new SoakedDynamicMemberAccessOp (new Identifier 'a'), new CSString 'b'
-    eq 'a::[c = 0]', generate new DynamicProtoMemberAccessOp (new Identifier 'a'), new AssignOp (new Identifier 'c'), new Int 0
-    eq 'a?::[0; 1]', generate new SoakedDynamicProtoMemberAccessOp (new Identifier 'a'), new SeqOp (new Int 0), new Int 1
-    eq 'fn()[0]', generate new DynamicMemberAccessOp (new FunctionApplication (new Identifier 'fn'), []), new Int 0
-    eq '(fn 0)[0]', generate new DynamicMemberAccessOp (new FunctionApplication (new Identifier 'fn'), [new Int 0]), new Int 0
-    eq '(->)[0]', generate new DynamicMemberAccessOp (new CSFunction [], new Block []), new Int 0
-    eq '(-> 0)[0]', generate new DynamicMemberAccessOp (new CSFunction [], new Block [new Int 0]), new Int 0
-    eq '(new A)[0]', generate new DynamicMemberAccessOp (new NewOp (new Identifier 'A'), []), new Int 0
-    eq '(new A 0)[1]', generate new DynamicMemberAccessOp (new NewOp (new Identifier 'A'), [new Int 0]), new Int 1
+    eq 'a[0]', generate new DynamicMemberAccessOp @a, @zero
+    eq 'a[0][1]', generate new DynamicMemberAccessOp (new DynamicMemberAccessOp @a, @zero), @one
+    eq 'a?[\'b\']', generate new SoakedDynamicMemberAccessOp @a, new CSString 'b'
+    eq 'a::[c = 0]', generate new DynamicProtoMemberAccessOp @a, new AssignOp @c, @zero
+    eq 'a?::[0; 1]', generate new SoakedDynamicProtoMemberAccessOp @a, new SeqOp @zero, @one
+    eq 'f()[0]', generate new DynamicMemberAccessOp (new FunctionApplication @f, []), @zero
+    eq '(f 0)[0]', generate new DynamicMemberAccessOp (new FunctionApplication @f, [@zero]), @zero
+    eq '(->)[0]', generate new DynamicMemberAccessOp (@emptyFunction), @zero
+    eq '(-> 0)[0]', generate new DynamicMemberAccessOp (new CSFunction [], new Block [@zero]), @zero
+    eq '(new F)[0]', generate new DynamicMemberAccessOp (new NewOp @F, []), @zero
+    eq '(new F 0)[1]', generate new DynamicMemberAccessOp (new NewOp @F, [@zero]), @one
 
   test 'combinations of static/dynamic member access operators', ->
-    eq 'a.b[c]::d', generate new ProtoMemberAccessOp (new DynamicMemberAccessOp (new MemberAccessOp (new Identifier 'a'), 'b'), new Identifier 'c'), 'd'
+    eq 'a.b[c]::d', generate new ProtoMemberAccessOp (new DynamicMemberAccessOp (new MemberAccessOp @a, 'b'), @c), 'd'
