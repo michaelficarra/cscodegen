@@ -108,16 +108,20 @@ do (exports = exports ? this.cscodegen = {}) ->
     parentClassName = parent?.className
     usedAsExpression = parent? and parentClassName isnt 'Block'
     src = switch ast.className
+
       when 'Program'
         options.ancestors.unshift ast
         generate ast.block, options
+
       when 'Block'
         options.ancestors.unshift ast
         sep = '\n'
         sep = "#{sep}\n" if parentClassName is 'Program'
         (generate s, options for s in ast.statements).join sep
+
       when 'Identifier'
         ast.data
+
       when 'Int'
         absNum = if ast.data < 0 then -ast.data else ast.data
         # if number is a power of two (at least 2^4) or hex is a shorter
@@ -126,8 +130,10 @@ do (exports = exports ? this.cscodegen = {}) ->
           "0x#{ast.data.toString 16}"
         else
           ast.data.toString 10
+
       when 'String'
         "'#{formatStringData ast.data}'"
+
       when 'Function', 'BoundFunction'
         options.ancestors.unshift ast
         options.precedence = precedence['AssignmentExpression']
@@ -142,6 +148,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         switch ast.className
           when 'Function' then "#{paramList}->#{body}"
           when 'BoundFunction' then "#{paramList}=>#{body}"
+
       when 'AssignOp'
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
@@ -150,6 +157,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         assignee = generate ast.assignee, options
         expr = generate ast.expr, options
         "#{assignee} = #{expr}"
+
       when 'SeqOp'
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
@@ -158,6 +166,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         left = generate ast.left, options
         right = generate ast.right, options
         "#{left}; #{right}"
+
       when 'LogicalOrOp', 'LogicalAndOp', 'BitOrOp', 'BitXorOp', 'BitAndOp', 'LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp', 'EQOp', 'NEQOp', 'LTOp', 'LTEOp', 'GTOp', 'GTEOp', 'InOp', 'OfOp', 'InstanceofOp', 'PlusOp', 'SubtractOp', 'MultiplyOp', 'DivideOp', 'RemOp', 'ExistsOp'
         op = operators[ast.className]
         if ast.className in ['InOp', 'OfOp', 'InstanceofOp'] and parentClassName is 'LogicalNotOp'
@@ -170,6 +179,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         left = parens left if needsParensWhenOnLeft ast.left
         right = generate ast.right, options
         "#{left} #{op} #{right}"
+
       when 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -184,6 +194,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = prec
         options.ancestors.unshift ast
         "#{op}#{generate ast.expr, options}"
+
       when 'UnaryExistsOp', 'PostIncrementOp', 'PostDecrementOp', 'Spread'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -193,6 +204,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         expr = generate ast.expr, options
         expr = parens expr if needsParensWhenOnLeft ast.expr
         "#{expr}#{op}"
+
       when 'NewOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -209,6 +221,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         args = args.join ', '
         args = " #{args}" if ast.arguments.length > 0
         "#{op}#{ctor}#{args}"
+
       when 'FunctionApplication', 'SoakedFunctionApplication'
         if ast.className is 'FunctionApplication' and ast.arguments.length is 0 and not usedAsExpression
           generate (new DoOp ast.function), options
@@ -224,6 +237,7 @@ do (exports = exports ? this.cscodegen = {}) ->
             arg
           argList = if ast.arguments.length is 0 then '()' else " #{args.join ', '}"
           "#{fn}#{op}#{argList}"
+
       when 'MemberAccessOp', 'SoakedMemberAccessOp', 'ProtoMemberAccessOp', 'SoakedProtoMemberAccessOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -233,6 +247,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         expr = generate ast.expr, options
         expr = parens expr if needsParensWhenOnLeft ast.expr
         "#{expr}#{op}#{ast.memberName}"
+
       when 'DynamicMemberAccessOp', 'SoakedDynamicMemberAccessOp', 'DynamicProtoMemberAccessOp', 'SoakedDynamicProtoMemberAccessOp'
         op = operators[ast.className]
         prec = precedence[ast.className]
@@ -244,10 +259,13 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = 0
         indexingExpr = generate ast.indexingExpr, options
         "#{expr}#{op}[#{indexingExpr}]"
+
       when 'ConcatOp'
         left = formatInterpolation ast.left, options
         right = formatInterpolation ast.right, options
         "\"#{left}#{right}\""
+
       else
         throw new Error "Non-exhaustive patterns in case: #{ast.className}"
+
     if needsParens then (parens src) else src
