@@ -1,5 +1,6 @@
 suite 'Combinations', ->
 
+  # TODO: this was just an early test; replace it with more modular tests
   test 'program . assignment . application . function . maths . maths', ->
     eq 'a = ((x, y) -> x * (y + z)) b'
     , generate new Program new Block [

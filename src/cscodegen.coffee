@@ -158,6 +158,15 @@ do (exports = exports ? this.cscodegen = {}) ->
         expr = generate ast.expr, options
         "#{assignee} = #{expr}"
 
+      when 'CompoundAssignOp'
+        prec = precedence[ast.className]
+        needsParens = prec < options.precedence
+        options.precedence = prec
+        options.ancestors.unshift ast
+        assignee = generate ast.assignee, options
+        expr = generate ast.expr, options
+        "#{assignee} #{operators[ast.op::className]}= #{expr}"
+
       when 'SeqOp'
         prec = precedence[ast.className]
         needsParens = prec < options.precedence

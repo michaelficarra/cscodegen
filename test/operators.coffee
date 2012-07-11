@@ -24,7 +24,7 @@ suite 'Operators', ->
 
   test 'unary prefix operators and function literals', ->
     eq '+->', generate new UnaryPlusOp @emptyFunction
-    eq 'new ->', generate new NewOp (@emptyFunction), []
+    eq 'new ->', generate new NewOp @emptyFunction, []
 
   test 'unary prefix operators and function application', ->
     eq 'not f 0', generate new LogicalNotOp new FunctionApplication @f, [@zero]
@@ -32,7 +32,7 @@ suite 'Operators', ->
     eq 'new (F 0) 1', generate new NewOp (new FunctionApplication @F, [@zero]), [@one]
 
   test 'unary prefix operators and application of function literals', ->
-    eq 'new (->) 0, 1', generate new NewOp (@emptyFunction), [@zero, @one]
+    eq 'new (->) 0, 1', generate new NewOp @emptyFunction, [@zero, @one]
 
 
   test 'unary postfix operators', ->
@@ -79,14 +79,15 @@ suite 'Operators', ->
     eq '0 * 1', generate new MultiplyOp @zero, @one
     eq '0 / 1', generate new DivideOp @zero, @one
     eq '0 % 1', generate new RemOp @zero, @one
+    eq 'a = 0', generate new AssignOp @a, @zero
 
   test 'negated binary operators', ->
     eq '0 not in 1', generate new LogicalNotOp new InOp @zero, @one
 
   test 'binary operators and function literals', ->
-    eq '(->) % 0', generate new RemOp (@emptyFunction), @zero
+    eq '(->) % 0', generate new RemOp @emptyFunction, @zero
     eq '0 % ->', generate new RemOp @zero, @emptyFunction
-    eq '->; 0', generate new SeqOp (@emptyFunction), @zero
+    eq '->; 0', generate new SeqOp @emptyFunction, @zero
     eq '0; ->', generate new SeqOp @zero, @emptyFunction
 
   test 'binary operators and function application', ->
@@ -99,12 +100,19 @@ suite 'Operators', ->
     eq '(do ->) % 0', generate new RemOp (new DoOp @emptyFunction), @zero
 
 
+  test 'compound assignment operators', ->
+    eq 'a += 0', generate new CompoundAssignOp PlusOp, @a, @zero
+    eq 'a or= 0', generate new CompoundAssignOp LogicalOrOp, @a, @zero
+    eq 'a &= 0', generate new CompoundAssignOp BitAndOp, @a, @zero
+    eq 'a >>>= 0', generate new CompoundAssignOp UnsignedRightShiftOp, @a, @zero
+
+
   test 'static member access operators', ->
     eq 'a.b', generate new MemberAccessOp @a, 'b'
     eq 'a.b.c', generate new MemberAccessOp (new MemberAccessOp @a, 'b'), 'c'
     eq 'f()?.a', generate new SoakedMemberAccessOp (new FunctionApplication @f, []), 'a'
     eq '(f 0)::a', generate new ProtoMemberAccessOp (new FunctionApplication @f, [@zero]), 'a'
-    eq '(->)?::a', generate new SoakedProtoMemberAccessOp (@emptyFunction), 'a'
+    eq '(->)?::a', generate new SoakedProtoMemberAccessOp @emptyFunction, 'a'
     eq '(-> 0).a', generate new MemberAccessOp (new CSFunction [], new Block [@zero]), 'a'
     eq '(new F).b', generate new MemberAccessOp (new NewOp @F, []), 'b'
     eq '(new F 0).b', generate new MemberAccessOp (new NewOp @F, [@zero]), 'b'
@@ -117,7 +125,7 @@ suite 'Operators', ->
     eq 'a?::[0; 1]', generate new SoakedDynamicProtoMemberAccessOp @a, new SeqOp @zero, @one
     eq 'f()[0]', generate new DynamicMemberAccessOp (new FunctionApplication @f, []), @zero
     eq '(f 0)[0]', generate new DynamicMemberAccessOp (new FunctionApplication @f, [@zero]), @zero
-    eq '(->)[0]', generate new DynamicMemberAccessOp (@emptyFunction), @zero
+    eq '(->)[0]', generate new DynamicMemberAccessOp @emptyFunction, @zero
     eq '(-> 0)[0]', generate new DynamicMemberAccessOp (new CSFunction [], new Block [@zero]), @zero
     eq '(new F)[0]', generate new DynamicMemberAccessOp (new NewOp @F, []), @zero
     eq '(new F 0)[1]', generate new DynamicMemberAccessOp (new NewOp @F, [@zero]), @one
