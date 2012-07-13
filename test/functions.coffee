@@ -19,21 +19,21 @@ suite 'Function Literals', ->
 
   test 'less basic function bodies', ->
 
-    eq """
+    eq '''
       ->
         x
         y
-    """, generate new CSFunction [], new Block [
+    ''', generate new CSFunction [], new Block [
       @x
       @y
     ]
 
-    eq """
+    eq '''
       (x, y) =>
         x = (y; x)
         x; y
         x + y
-    """, generate new BoundFunction [@x, @y], new Block [
+    ''', generate new BoundFunction [@x, @y], new Block [
       new AssignOp @x, new SeqOp @y, @x
       new SeqOp @x, @y
       new PlusOp @x, @y

@@ -34,6 +34,7 @@ do (exports = exports ? this.cscodegen = {}) ->
   needsParensWhenOnLeft = (ast) ->
     switch ast.className
       when 'Function', 'BoundFunction', 'NewOp' then yes
+      when 'Conditional', 'Switch', 'While', 'Block' then yes
       when 'PreIncrementOp', 'PreDecrementOp', 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'DeleteOp'
         needsParensWhenOnLeft ast.expr
       when 'FunctionApplication' then ast.arguments.length > 0
@@ -55,7 +56,7 @@ do (exports = exports ? this.cscodegen = {}) ->
     ['LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp'] # Bitwise Shift
     ['PlusOp', 'SubtractOp'] # Additive
     ['MultiplyOp', 'DivideOp', 'RemOp'] # Multiplicative
-    ['UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp', 'DeleteOp'] # Unary
+    ['UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp', 'DeleteOp', 'Undefined'] # Unary
     ['UnaryExistsOp', 'ShallowCopyArray', 'PostIncrementOp', 'PostDecrementOp', 'Spread'] # Postfix
     ['NewOp'] # New
     ['MemberAccessOp', 'SoakedMemberAccessOp', 'DynamicMemberAccessOp', 'SoakedDynamicMemberAccessOp', 'ProtoMemberAccessOp', 'DynamicProtoMemberAccessOp', 'SoakedProtoMemberAccessOp', 'SoakedDynamicProtoMemberAccessOp'] # Member
@@ -115,12 +116,39 @@ do (exports = exports ? this.cscodegen = {}) ->
 
       when 'Block'
         options.ancestors.unshift ast
-        sep = '\n'
-        sep = "#{sep}\n" if parentClassName is 'Program'
-        (generate s, options for s in ast.statements).join sep
+        if ast.statements.length is 0 then generate (new Undefined).g(), options
+        else
+          sep = '\n'
+          sep = "#{sep}\n" if parentClassName is 'Program'
+          (generate s, options for s in ast.statements).join sep
 
-      when 'Identifier'
-        ast.data
+      when 'Conditional'
+        options.ancestors.unshift ast
+        options.precedence = 0
+        isElseBlockMultiline = ast.elseBlock? and ast.elseBlock.className is 'Block' and ast.elseBlock.statements.length > 1
+        isBlockMultiline = isElseBlockMultiline or ast.block? and ast.block.className is 'Block' and ast.block.statements.length > 1
+        block =
+          if ast.block?
+            _block = generate ast.block, options
+            if isBlockMultiline then "\n#{indent _block}" else " then #{_block}"
+          else
+            " then #{generate (new Undefined).g(), options}"
+        elseBlock =
+          if ast.elseBlock?
+            _kw = "#{if isBlockMultiline then '\n' else ' '}else"
+            _elseBlock = generate ast.elseBlock, options
+            if isElseBlockMultiline then "#{_kw}\n#{indent _elseBlock}" else "#{_kw} #{_elseBlock}"
+          else ""
+        "if #{generate ast.condition, options}#{block}#{elseBlock}"
+
+      when 'Identifier' then ast.data
+
+      when 'Null' then 'null'
+
+      when 'Undefined'
+        prec = precedence[ast.className]
+        needsParens = prec < options.precedence
+        'void 0'
 
       when 'Int'
         absNum = if ast.data < 0 then -ast.data else ast.data
@@ -136,7 +164,7 @@ do (exports = exports ? this.cscodegen = {}) ->
 
       when 'Function', 'BoundFunction'
         options.ancestors.unshift ast
-        options.precedence = precedence['AssignmentExpression']
+        options.precedence = precedence.AssignmentExpression
         parameters = (generate p, options for p in ast.parameters)
         options.precedence = 0
         block = generate ast.block, options
