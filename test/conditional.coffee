@@ -30,14 +30,16 @@ suite 'Conditionals', ->
     if 0
       1
       2
-    else 3
+    else
+      3
     ''', generate new Conditional (new Int 0), (new Block [(new Int 1), new Int 2]), new Block [new Int 3]
 
     eq '''
     if 0
       1
       2
-    else 3
+    else
+      3
     ''', generate new Conditional (new Int 0), (new Block [(new Int 1), new Int 2]), new Int 3
 
   test 'basic block with multiline else', ->

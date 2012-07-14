@@ -125,21 +125,23 @@ do (exports = exports ? this.cscodegen = {}) ->
       when 'Conditional'
         options.ancestors.unshift ast
         options.precedence = 0
-        isElseBlockMultiline = ast.elseBlock? and ast.elseBlock.className is 'Block' and ast.elseBlock.statements.length > 1
-        isBlockMultiline = isElseBlockMultiline or ast.block? and ast.block.className is 'Block' and ast.block.statements.length > 1
-        block =
-          if ast.block?
-            _block = generate ast.block, options
-            if isBlockMultiline then "\n#{indent _block}" else " then #{_block}"
-          else
-            " then #{generate (new Undefined).g(), options}"
-        elseBlock =
-          if ast.elseBlock?
-            _kw = "#{if isBlockMultiline then '\n' else ' '}else"
-            _elseBlock = generate ast.elseBlock, options
-            if isElseBlockMultiline then "#{_kw}\n#{indent _elseBlock}" else "#{_kw} #{_elseBlock}"
-          else ""
-        "if #{generate ast.condition, options}#{block}#{elseBlock}"
+
+        hasElseBlock = ast.block? and ast.elseBlock?
+        _block = generate (ast.block ? (new Undefined).g()), options
+        _elseBlock = if hasElseBlock then generate ast.elseBlock, options else ""
+
+        isMultiline =
+          _block.length > 90 or
+          _elseBlock.length > 90 or
+          (_elseBlock.indexOf '\n') > -1 or
+          (_block.indexOf '\n') > -1
+
+        _block = if isMultiline then "\n#{indent _block}" else " then #{_block}"
+        if hasElseBlock
+          _elseBlock =
+            if isMultiline then "\nelse\n#{indent _elseBlock}"
+            else " else #{_elseBlock}"
+        "if #{generate ast.condition, options}#{_block}#{_elseBlock}"
 
       when 'Identifier' then ast.data
 
