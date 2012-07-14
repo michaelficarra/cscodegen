@@ -118,8 +118,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.ancestors.unshift ast
         if ast.statements.length is 0 then generate (new Undefined).g(), options
         else
-          sep = '\n'
-          sep = "#{sep}\n" if parentClassName is 'Program'
+          sep = if parentClassName is 'Program' then '\n\n' else '\n'
           (generate s, options for s in ast.statements).join sep
 
       when 'Conditional'
@@ -169,140 +168,140 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = precedence.AssignmentExpression
         parameters = (generate p, options for p in ast.parameters)
         options.precedence = 0
-        block = generate ast.block, options
-        paramList = if ast.parameters.length > 0 then "(#{parameters.join ', '}) " else ''
-        body = switch ast.block.statements.length
+        _block = generate ast.block, options
+        _paramList = if ast.parameters.length > 0 then "(#{parameters.join ', '}) " else ''
+        _body = switch ast.block.statements.length
           when 0 then ""
-          when 1 then " #{block}"
-          else "\n#{indent block}"
+          when 1 then " #{_block}"
+          else "\n#{indent _block}"
         switch ast.className
-          when 'Function' then "#{paramList}->#{body}"
-          when 'BoundFunction' then "#{paramList}=>#{body}"
+          when 'Function' then "#{_paramList}->#{_body}"
+          when 'BoundFunction' then "#{_paramList}=>#{_body}"
 
       when 'AssignOp'
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        assignee = generate ast.assignee, options
-        expr = generate ast.expr, options
-        "#{assignee} = #{expr}"
+        _assignee = generate ast.assignee, options
+        _expr = generate ast.expr, options
+        "#{_assignee} = #{_expr}"
 
       when 'CompoundAssignOp'
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        assignee = generate ast.assignee, options
-        expr = generate ast.expr, options
-        "#{assignee} #{operators[ast.op::className]}= #{expr}"
+        _op = operators[ast.op::className]
+        _assignee = generate ast.assignee, options
+        _expr = generate ast.expr, options
+        "#{_assignee} #{_op}= #{_expr}"
 
       when 'SeqOp'
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        left = generate ast.left, options
-        right = generate ast.right, options
-        "#{left}; #{right}"
+        _left = generate ast.left, options
+        _right = generate ast.right, options
+        "#{_left}; #{_right}"
 
       when 'LogicalOrOp', 'LogicalAndOp', 'BitOrOp', 'BitXorOp', 'BitAndOp', 'LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp', 'EQOp', 'NEQOp', 'LTOp', 'LTEOp', 'GTOp', 'GTEOp', 'InOp', 'OfOp', 'InstanceofOp', 'PlusOp', 'SubtractOp', 'MultiplyOp', 'DivideOp', 'RemOp', 'ExistsOp'
-        op = operators[ast.className]
+        _op = operators[ast.className]
         if ast.className in ['InOp', 'OfOp', 'InstanceofOp'] and parentClassName is 'LogicalNotOp'
-          op = "not #{op}"
+          _op = "not #{_op}"
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        left = generate ast.left, options
-        left = parens left if needsParensWhenOnLeft ast.left
-        right = generate ast.right, options
-        "#{left} #{op} #{right}"
+        _left = generate ast.left, options
+        _left = parens _left if needsParensWhenOnLeft ast.left
+        _right = generate ast.right, options
+        "#{_left} #{_op} #{_right}"
 
       when 'UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp'
-        op = operators[ast.className]
+        _op = operators[ast.className]
         prec = precedence[ast.className]
         if ast.className is 'LogicalNotOp'
           if ast.expr.className in ['InOp', 'OfOp', 'InstanceofOp']
-            op = '' # these will be treated as negated variants
+            _op = '' # these will be treated as negated variants
             prec = precedence[ast.expr.className]
           if 'LogicalNotOp' in [parentClassName, ast.expr.className]
-            op = '!'
+            _op = '!'
         needsParens = prec < options.precedence
         needsParens = yes if parentClassName is ast.className and ast.className in ['UnaryPlusOp', 'UnaryNegateOp']
         options.precedence = prec
         options.ancestors.unshift ast
-        "#{op}#{generate ast.expr, options}"
+        "#{_op}#{generate ast.expr, options}"
 
       when 'UnaryExistsOp', 'PostIncrementOp', 'PostDecrementOp', 'Spread'
-        op = operators[ast.className]
+        _op = operators[ast.className]
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        expr = generate ast.expr, options
-        expr = parens expr if needsParensWhenOnLeft ast.expr
-        "#{expr}#{op}"
+        _expr = generate ast.expr, options
+        _expr = parens _expr if needsParensWhenOnLeft ast.expr
+        "#{_expr}#{_op}"
 
       when 'NewOp'
-        op = operators[ast.className]
+        _op = operators[ast.className]
         prec = precedence[ast.className]
         #needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        ctor = generate ast.ctor, options
-        ctor = parens ctor if ast.arguments.length > 0 and needsParensWhenOnLeft ast.ctor
+        _ctor = generate ast.ctor, options
+        _ctor = parens _ctor if ast.arguments.length > 0 and needsParensWhenOnLeft ast.ctor
         options.precedence = precedence['AssignOp']
         args = for a, i in ast.arguments
           arg = generate a, options
           arg = parens arg if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
           arg
-        args = args.join ', '
-        args = " #{args}" if ast.arguments.length > 0
-        "#{op}#{ctor}#{args}"
+        _args = if ast.arguments.length is 0 then '' else " #{args.join ', '}"
+        "#{_op}#{_ctor}#{_args}"
 
       when 'FunctionApplication', 'SoakedFunctionApplication'
         if ast.className is 'FunctionApplication' and ast.arguments.length is 0 and not usedAsExpression
           generate (new DoOp ast.function), options
         else
-          op = operators[ast.className]
+          _op = operators[ast.className]
           options.precedence = precedence[ast.className]
           options.ancestors.unshift ast
-          fn = generate ast.function, options
-          fn = parens fn if needsParensWhenOnLeft ast.function
+          _fn = generate ast.function, options
+          _fn = parens _fn if needsParensWhenOnLeft ast.function
           args = for a, i in ast.arguments
             arg = generate a, options
             arg = parens arg if (needsParensWhenOnLeft a) and i + 1 isnt ast.arguments.length
             arg
-          argList = if ast.arguments.length is 0 then '()' else " #{args.join ', '}"
-          "#{fn}#{op}#{argList}"
+          _argList = if ast.arguments.length is 0 then '()' else " #{args.join ', '}"
+          "#{_fn}#{_op}#{_argList}"
 
       when 'MemberAccessOp', 'SoakedMemberAccessOp', 'ProtoMemberAccessOp', 'SoakedProtoMemberAccessOp'
-        op = operators[ast.className]
+        _op = operators[ast.className]
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        expr = generate ast.expr, options
-        expr = parens expr if needsParensWhenOnLeft ast.expr
-        "#{expr}#{op}#{ast.memberName}"
+        _expr = generate ast.expr, options
+        _expr = parens _expr if needsParensWhenOnLeft ast.expr
+        "#{_expr}#{_op}#{ast.memberName}"
 
       when 'DynamicMemberAccessOp', 'SoakedDynamicMemberAccessOp', 'DynamicProtoMemberAccessOp', 'SoakedDynamicProtoMemberAccessOp'
-        op = operators[ast.className]
+        _op = operators[ast.className]
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        expr = generate ast.expr, options
-        expr = parens expr if needsParensWhenOnLeft ast.expr
+        _expr = generate ast.expr, options
+        _expr = parens _expr if needsParensWhenOnLeft ast.expr
         options.precedence = 0
-        indexingExpr = generate ast.indexingExpr, options
-        "#{expr}#{op}[#{indexingExpr}]"
+        _indexingExpr = generate ast.indexingExpr, options
+        "#{_expr}#{_op}[#{_indexingExpr}]"
 
       when 'ConcatOp'
-        left = formatInterpolation ast.left, options
-        right = formatInterpolation ast.right, options
-        "\"#{left}#{right}\""
+        _left = formatInterpolation ast.left, options
+        _right = formatInterpolation ast.right, options
+        "\"#{_left}#{_right}\""
 
       else
         throw new Error "Non-exhaustive patterns in case: #{ast.className}"
