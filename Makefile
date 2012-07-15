@@ -11,7 +11,7 @@ all: $(LIB)
 build: all
 
 lib/%.js: src/%.coffee lib
-	$(COFFEE) -sc < "$(@:lib/%.js=src/%.coffee)" > "$@"
+	$(COFFEE) -sc < "$<" > "$@"
 
 lib:
 	mkdir lib
