@@ -101,6 +101,7 @@ do (exports = exports ? this.cscodegen = {}) ->
     SoakedDynamicProtoMemberAccessOp: '?::'
 
   # TODO: DRY this function
+  # TODO: ast as context?
   exports.generate = generate = (ast, options = {}) ->
     needsParens = no
     options.precedence ?= 0
@@ -112,7 +113,7 @@ do (exports = exports ? this.cscodegen = {}) ->
 
       when 'Program'
         options.ancestors.unshift ast
-        generate ast.block, options
+        if ast.block? then generate ast.block, options else ''
 
       when 'Block'
         options.ancestors.unshift ast
@@ -132,8 +133,8 @@ do (exports = exports ? this.cscodegen = {}) ->
         isMultiline =
           _block.length > 90 or
           _elseBlock.length > 90 or
-          (_elseBlock.indexOf '\n') > -1 or
-          (_block.indexOf '\n') > -1
+          '\n' in _elseBlock or
+          '\n' in _block
 
         _block = if isMultiline then "\n#{indent _block}" else " then #{_block}"
         if hasElseBlock
@@ -160,6 +161,8 @@ do (exports = exports ? this.cscodegen = {}) ->
         else
           ast.data.toString 10
 
+      when 'Float' then ast.data.toString 10
+
       when 'String'
         "'#{formatStringData ast.data}'"
 
@@ -168,11 +171,11 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.precedence = precedence.AssignmentExpression
         parameters = (generate p, options for p in ast.parameters)
         options.precedence = 0
-        _block = generate ast.block, options
+        _block = if !ast.block? or ast.block.className is 'Undefined' then '' else generate ast.block, options
         _paramList = if ast.parameters.length > 0 then "(#{parameters.join ', '}) " else ''
-        _body = switch ast.block.statements.length
-          when 0 then ""
-          when 1 then " #{_block}"
+        _body =
+          if _block.length is 0 then ''
+          else if _paramList.length + _block.length < 100 and '\n' not in _block then " #{_block}"
           else "\n#{indent _block}"
         switch ast.className
           when 'Function' then "#{_paramList}->#{_body}"

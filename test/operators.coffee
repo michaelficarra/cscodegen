@@ -1,8 +1,7 @@
 suite 'Operators', ->
 
   setup ->
-    @emptyBlock = new Block []
-    @emptyFunction = new CSFunction [], @emptyBlock
+    @emptyFunction = new CSFunction [], null
     @zero = new Int 0
     @one = new Int 1
     @[letter] = new Identifier letter for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'F']
