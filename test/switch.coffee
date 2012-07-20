@@ -4,4 +4,4 @@ suite 'Switch', ->
   #  eq """
   #  switch a
   #    when b then c
-  #  """, generate new Switch (new Identifier 'a'), [[(new Identifier 'b'), new Identifier 'c']], null
+  #  """, generate new CS.Switch (new CS.Identifier 'a'), [[(new CS.Identifier 'b'), new CS.Identifier 'c']], null
