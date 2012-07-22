@@ -1,4 +1,4 @@
-suite 'Strings', ->
+suite 'String Literals', ->
 
   test 'basic strings', ->
     eq "'string'", generate new CS.String 'string'

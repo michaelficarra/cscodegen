@@ -194,7 +194,10 @@ do (exports = exports ? this.cscodegen = {}) ->
         members_ = (generate m, options for m in ast.members)
         switch ast.members.length
           when 0 then '[]'
-          when 1, 2 then "[#{members_.join ', '}]"
+          when 1, 2
+            for m, i in members_ when i + 1 isnt members_.length
+              members_[i] = parens m if needsParensWhenOnLeft ast.members[i]
+            "[#{members_.join ', '}]"
           else "[\n#{indent members_.join '\n'}\n]"
 
       when 'ObjectInitialiser'
@@ -202,7 +205,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         members_ = (generate m, options for m in ast.members)
         switch ast.members.length
           when 0 then '{}'
-          when 1, 2 then "{#{members_.join ', '}}"
+          when 1 then "{#{members_.join ', '}}"
           else "{\n#{indent members_.join '\n'}\n}"
 
       when 'ObjectInitialiserMember'
