@@ -40,6 +40,17 @@ do (exports = exports ? this.cscodegen = {}) ->
       when 'FunctionApplication' then ast.arguments.length > 0
       else no
 
+  eq = (nodeA, nodeB) ->
+    for own prop, val of nodeA
+      continue if prop in ['raw', 'line', 'column']
+      switch Object::toString.call val
+        when '[object Object]' then return no unless eq nodeB[prop], val
+        when '[object Array]'
+          for v, i in val
+            return no unless eq nodeB[prop][i], v
+        else return no unless nodeB[prop] is val
+    yes
+
   levels = [
     ['SeqOp'] # Sequence
     ['Conditional', 'ForIn', 'ForOf', 'While'] # Control Flow
@@ -147,6 +158,8 @@ do (exports = exports ? this.cscodegen = {}) ->
 
       when 'Null' then 'null'
 
+      when 'This' then 'this'
+
       when 'Undefined'
         prec = precedence[ast.className]
         needsParens = prec < options.precedence
@@ -165,6 +178,37 @@ do (exports = exports ? this.cscodegen = {}) ->
 
       when 'String'
         "'#{formatStringData ast.data}'"
+
+      when 'ArrayInitialiser'
+        options.ancestors.unshift ast
+        options.precedence = precedence.AssignmentExpression
+        members_ = (generate m, options for m in ast.members)
+        switch ast.members.length
+          when 0 then '[]'
+          when 1, 2 then "[#{members_.join ', '}]"
+          else "[\n#{indent members_.join '\n'}\n]"
+
+      when 'ObjectInitialiser'
+        options.ancestors.unshift ast
+        options.precedence = precedence.AssignmentExpression
+        members_ = (generate m, options for m in ast.members)
+        switch ast.members.length
+          when 0 then '{}'
+          when 1, 2 then "{#{members_.join ', '}}"
+          else "{\n#{indent members_.join '\n'}\n}"
+
+      when 'ObjectInitialiserMember'
+        options.ancestors.unshift ast
+        options.precedence = precedence.AssignmentExpression
+        key_ = generate ast.key, options
+        expression_ = generate ast.expression, options
+        memberAccessOps = ['MemberAccessOp', 'ProtoMemberAccessOp', 'SoakedMemberAccessOp', 'SoakedProtoMemberAccessOp']
+        if eq ast.key, ast.expression
+          "#{key_}"
+        else if ast.expression.className in memberAccessOps and ast.key.data is ast.expression.memberName
+          "#{expression_}"
+        else
+          "#{key_}: #{expression_}"
 
       when 'Function', 'BoundFunction'
         options.ancestors.unshift ast
@@ -285,8 +329,12 @@ do (exports = exports ? this.cscodegen = {}) ->
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        _expr = generate ast.expression, options
-        _expr = parens _expr if needsParensWhenOnLeft ast.expression
+        if ast.expression.className is 'This'
+          _expr = '@'
+          _op = '' if ast.className is 'MemberAccessOp'
+        else
+          _expr = generate ast.expression, options
+          _expr = parens _expr if needsParensWhenOnLeft ast.expression
         "#{_expr}#{_op}#{ast.memberName}"
 
       when 'DynamicMemberAccessOp', 'SoakedDynamicMemberAccessOp', 'DynamicProtoMemberAccessOp', 'SoakedDynamicProtoMemberAccessOp'
@@ -295,8 +343,11 @@ do (exports = exports ? this.cscodegen = {}) ->
         needsParens = prec < options.precedence
         options.precedence = prec
         options.ancestors.unshift ast
-        _expr = generate ast.expression, options
-        _expr = parens _expr if needsParensWhenOnLeft ast.expression
+        if ast.expression.className is 'This'
+          _expr = '@'
+        else
+          _expr = generate ast.expression, options
+          _expr = parens _expr if needsParensWhenOnLeft ast.expression
         options.precedence = 0
         _indexingExpr = generate ast.indexingExpr, options
         "#{_expr}#{_op}[#{_indexingExpr}]"
