@@ -1,0 +1,27 @@
+{
+  "name":         "cscodegen",
+  "description":  "CoffeeScript code generator",
+  "keywords":     ["coffeescript", "generator", "compiler", "formatter", "AST"],
+  "author":       "Michael Ficarra",
+  "version":      "0.1.0",
+  "licenses":     [{
+    "type":       "3-clause BSD",
+    "url":        "https://raw.github.com/michaelficarra/cscodegen/master/LICENSE"
+  }],
+  "engines":      {
+    "node":       ">=0.6.0"
+  },
+  "directories" : {
+    "lib" : "./lib"
+  },
+  "main" : "./lib/cscodegen",
+  "bin":          {
+    "cake":       "./bin/cscodegen"
+  },
+  "homepage":     "https://github.com/michaelficarra/cscodegen",
+  "bugs":         "https://github.com/michaelficarra/cscodegen/issues",
+  "repository":   {
+    "type": "git",
+    "url": "git://github.com/michaelficarra/cscodegen.git"
+  }
+}
