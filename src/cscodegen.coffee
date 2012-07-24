@@ -73,7 +73,7 @@ do (exports = exports ? this.cscodegen = {}) ->
     ['LeftShiftOp', 'SignedRightShiftOp', 'UnsignedRightShiftOp'] # Bitwise Shift
     ['PlusOp', 'SubtractOp'] # Additive
     ['MultiplyOp', 'DivideOp', 'RemOp'] # Multiplicative
-    ['UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp', 'DeleteOp', 'Undefined'] # Unary
+    ['UnaryPlusOp', 'UnaryNegateOp', 'LogicalNotOp', 'BitNotOp', 'DoOp', 'TypeofOp', 'PreIncrementOp', 'PreDecrementOp', 'DeleteOp'] # Unary
     ['UnaryExistsOp', 'ShallowCopyArray', 'PostIncrementOp', 'PostDecrementOp', 'Spread'] # Postfix
     ['NewOp'] # New
     ['MemberAccessOp', 'SoakedMemberAccessOp', 'DynamicMemberAccessOp', 'SoakedDynamicMemberAccessOp', 'ProtoMemberAccessOp', 'DynamicProtoMemberAccessOp', 'SoakedProtoMemberAccessOp', 'SoakedDynamicProtoMemberAccessOp'] # Member
@@ -165,13 +165,8 @@ do (exports = exports ? this.cscodegen = {}) ->
       when 'Identifier' then ast.data
 
       when 'Null' then 'null'
-
       when 'This' then 'this'
-
-      when 'Undefined'
-        prec = precedence[ast.className]
-        needsParens = prec < options.precedence
-        'void 0'
+      when 'Undefined' then 'undefined'
 
       when 'Int'
         absNum = if ast.data < 0 then -ast.data else ast.data
@@ -332,7 +327,7 @@ do (exports = exports ? this.cscodegen = {}) ->
         else
           options = clone options,
             ancestors: [ast, options.ancestors...]
-            precedence: prec
+            precedence: precedence[ast.className]
           _op = operators[ast.className]
           _fn = generate ast.function, options
           _fn = parens _fn if needsParensWhenOnLeft ast.function
