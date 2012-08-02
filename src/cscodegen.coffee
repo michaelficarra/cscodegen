@@ -311,8 +311,8 @@ do (exports = exports ? this.cscodegen = {}) ->
         options = clone options,
           ancestors: [ast, options.ancestors...]
           precedence: prec
-        _ctor = generate ast.constructor, options
-        _ctor = parens _ctor if ast.arguments.length > 0 and needsParensWhenOnLeft ast.constructor
+        _ctor = generate ast.ctor, options
+        _ctor = parens _ctor if ast.arguments.length > 0 and needsParensWhenOnLeft ast.ctor
         options.precedence = precedence['AssignOp']
         args = for a, i in ast.arguments
           arg = generate a, options
