@@ -130,7 +130,7 @@ do (exports = exports ? this.cscodegen = {}) ->
 
       when 'Program'
         options.ancestors = [ast, options.ancestors...]
-        if ast.block? then generate ast.block, options else ''
+        if ast.body? then generate ast.body, options else ''
 
       when 'Block'
         options = clone options,
@@ -145,22 +145,22 @@ do (exports = exports ? this.cscodegen = {}) ->
         options.ancestors.unshift ast
         options.precedence = 0
 
-        hasElseBlock = ast.block? and ast.elseBlock?
-        _block = generate (ast.block ? (new Undefined).g()), options
-        _elseBlock = if hasElseBlock then generate ast.elseBlock, options else ""
+        hasAlternate = ast.consequent? and ast.alternate?
+        _consequent = generate (ast.consequent ? (new Undefined).g()), options
+        _alternate = if hasAlternate then generate ast.alternate, options else ""
 
         isMultiline =
-          _block.length > 90 or
-          _elseBlock.length > 90 or
-          '\n' in _elseBlock or
-          '\n' in _block
+          _consequent.length > 90 or
+          _alternate.length > 90 or
+          '\n' in _alternate or
+          '\n' in _consequent
 
-        _block = if isMultiline then "\n#{indent _block}" else " then #{_block}"
-        if hasElseBlock
-          _elseBlock =
-            if isMultiline then "\nelse\n#{indent _elseBlock}"
-            else " else #{_elseBlock}"
-        "if #{generate ast.condition, options}#{_block}#{_elseBlock}"
+        _consequent = if isMultiline then "\n#{indent _consequent}" else " then #{_consequent}"
+        if hasAlternate
+          _alternate =
+            if isMultiline then "\nelse\n#{indent _alternate}"
+            else " else #{_alternate}"
+        "if #{generate ast.condition, options}#{_consequent}#{_alternate}"
 
       when 'Identifier' then ast.data
 
@@ -223,15 +223,15 @@ do (exports = exports ? this.cscodegen = {}) ->
           precedence: precedence.AssignmentExpression
         parameters = (generate p, options for p in ast.parameters)
         options.precedence = 0
-        _block = if !ast.block? or ast.block.className is 'Undefined' then '' else generate ast.block, options
+        _body = if !ast.body? or ast.body.className is 'Undefined' then '' else generate ast.body, options
         _paramList = if ast.parameters.length > 0 then "(#{parameters.join ', '}) " else ''
-        _body =
-          if _block.length is 0 then ''
-          else if _paramList.length + _block.length < 100 and '\n' not in _block then " #{_block}"
-          else "\n#{indent _block}"
+        _block =
+          if _body.length is 0 then ''
+          else if _paramList.length + _body.length < 100 and '\n' not in _body then " #{_body}"
+          else "\n#{indent _body}"
         switch ast.className
-          when 'Function' then "#{_paramList}->#{_body}"
-          when 'BoundFunction' then "#{_paramList}=>#{_body}"
+          when 'Function' then "#{_paramList}->#{_block}"
+          when 'BoundFunction' then "#{_paramList}=>#{_block}"
 
       when 'AssignOp'
         prec = precedence[ast.className]
